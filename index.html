@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym PR Tracker</title>
+    <!-- Tailwind CSS para diseño minimalista y profesional -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración PWA básica -->
+    <meta name="theme-color" content="#111827">
+    <link rel="manifest"
+        href="data:application/manifest+json,{'name':'Gym Tracker','short_name':'Gym','display':'standalone'}">
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg">
+        <!-- Header -->
+        <header class="bg-gray-900 text-white p-6 rounded-b-3xl shadow-md">
+            <h1 class="text-2xl font-bold tracking-tight">Gym Tracker</h1>
+            <p class="text-sm text-gray-400 mt-1">Registra y supera tus límites</p>
+        </header>
+
+        <main class="p-6 space-y-8">
+            <!-- Sección de Récords Personales (PRs) -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z">
+                        </path>
+                    </svg>
+                    Tus Mejores PRs
+                </h2>
+                <div id="pr-container" class="grid gap-3">
+                    <!-- Los PRs se cargarán aquí con JS -->
+                </div>
+            </section>
+
+            <hr class="border-gray-100">
+
+            <!-- Formulario de Registro -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Nuevo Registro</h2>
+                <form id="workout-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Ejercicio</label>
+                        <input type="text" id="exercise" required placeholder="Ej. Curl de Bíceps"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Peso (kg)</label>
+                            <input type="number" id="weight" step="0.5" required placeholder="0.0"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Repeticiones</label>
+                            <input type="number" id="reps" required placeholder="0"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all">
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors shadow-md">
+                        Guardar Serie
+                    </button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Cargar datos locales o inicializar array vacío
+        let workouts = JSON.parse(localStorage.getItem('gymWorkouts')) || [];
+
+        // Función principal para calcular y renderizar PRs
+        function renderPRs() {
+            const prContainer = document.getElementById('pr-container');
+            prContainer.innerHTML = '';
+
+            if (workouts.length === 0) {
+                prContainer.innerHTML = '<p class="text-sm text-gray-400 italic">Aún no hay registros. ¡Empieza a entrenar!</p>';
+                return;
+            }
+
+            // Lógica para obtener el PR por ejercicio
+            const prs = {};
+            workouts.forEach(workout => {
+                const name = workout.exercise.trim().toLowerCase();
+                if (!prs[name]) {
+                    prs[name] = workout;
+                } else {
+                    // Prevalece el peso máximo. Si es el mismo peso, prevalecen las repeticiones
+                    if (workout.weight > prs[name].weight) {
+                        prs[name] = workout;
+                    } else if (workout.weight === prs[name].weight && workout.reps > prs[name].reps) {
+                        prs[name] = workout;
+                    }
+                }
+            });
+
+            // Renderizar los PRs en la interfaz
+            Object.values(prs).forEach(pr => {
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-gray-100 p-4 rounded-xl shadow-sm flex justify-between items-center';
+
+                // Capitalizar primera letra del ejercicio
+                const exerciseName = pr.exercise.charAt(0).toUpperCase() + pr.exercise.slice(1);
+
+                card.innerHTML = `
+                    <div>
+                        <p class="font-medium text-gray-800">${exerciseName}</p>
+                        <p class="text-xs text-gray-400">${pr.date}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-bold text-gray-900">${pr.weight} <span class="text-sm font-normal text-gray-500">kg</span></p>
+                        <p class="text-sm font-medium text-gray-500">${pr.reps} reps</p>
+                    </div>
+                `;
+                prContainer.appendChild(card);
+            });
+        }
+
+        // Manejar el envío del formulario
+        document.getElementById('workout-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const newWorkout = {
+                exercise: document.getElementById('exercise').value,
+                weight: parseFloat(document.getElementById('weight').value),
+                reps: parseInt(document.getElementById('reps').value),
+                date: new Date().toLocaleDateString('es-PE') // Formato de fecha
+            };
+
+            workouts.push(newWorkout);
+            localStorage.setItem('gymWorkouts', JSON.stringify(workouts));
+
+            this.reset();
+            renderPRs();
+        });
+
+        // Cargar los PRs al iniciar
+        renderPRs();
+    </script>
+</body>
+
+</html>
